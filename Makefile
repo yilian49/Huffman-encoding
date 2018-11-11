@@ -3,7 +3,7 @@ CXXFLAGS=-Wall -Wextra -pedantic -Werror -std=c++17 -O0 -g
 LDFLAGS=$(CXXFLAGS)
 OBJ=$(SRC:.cc=.o)
 
-all:  test_bitio test_hforest test_huffman test_tree encoder decoder
+all:  encoder decoder # test_hforest test_huffman test_tree 
 
 test_bitio: bitio.o test_bitio.o
 	$(CXX) $(LDFLAGS) -o $@ $^
