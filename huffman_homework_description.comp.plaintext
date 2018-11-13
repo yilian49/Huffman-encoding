@@ -1,0 +1,101 @@
+HW7: Huffman encoding
+Goal
+In this exercise, we'll implement an actual, working compression and decompression program, based on the Adaptive Huffman encoding algorithm described in class, and building on top of our previous code.
+
+Preliminaries
+You may (but don't have to) submit this assignment in pairs of your choice. You should submit only one copy, but make sure to document in your README or submission comments who both partners are.
+Make sure you have a perfectly working version of HW6. If either partners has a good version, start from that one. If not, you're allowed at this point to start working from someone else's code (or mine). Be sure to document in your README or submission comments where you took the code from. You may not copy any code from anyone beyond what was submitted in HW6.
+Modify your HForest class so that pop_top returns the tree node with the lowest value, not the highest as it was before (essentially reversing the meaning of priority so that a lower value means higher priority).
+Read chapter 10 entirely in "A Tour of C++", 2nd ed.
+Your solution to this homework doesn't have to be 100% efficient, but it needs to be 100% correct.
+Part 1: Adaptive Huffman encoding (40%)
+Your first task is to implement the Adaptive Huffman encoding and decoding algorithm. The algorithm is encapsulated in a Huffman class in hufman.hh. You may add private members to this class, and of course, an huffman.cc implementation file, but shouldn't need to change its public interface.
+
+This class should implement the two algorithms described in class for encoding and decoding. Note that a Huffman object is meant to be used either for encoding or for decoding, not both at once. For both algorithms, this class should maintain a frequency table of symbols (all 256 possible ASCII characters + EOF). The table is first initialized to all zeros at the construction of the object. Every time a symbol is encoded or decoded, the table gets updated.
+
+The algorithm for encoding a character (symbol) c is summarized as follows:
+
+Build a Huffman tree from scratch, given the existing frequency table (see below).
+Find the path to c in the Huffman tree from the root.
+Convert the path of lefts and rights to zeros and ones, which will be returned as a sequence of bits.
+Increment the frequency table by adding one to c's count.
+Similarly, the algorithm for decoding a single bit b at a time into a symbol works as follows:
+
+If this is the first bit in a sequence (Huffman tree not yet computed), build a Huffman tree from scratch, given the existing frequency table (see below), and start from the root node.
+Otherwise, start from the previous node you've computed.
+Compute the next node as either the left or right child of the current node, depending on the bit value.
+If this is an intermediate node (not a leaf), you will return a negative number for a symbol. Otherwise, you're a leaf, pointing to an actual symbol, which you will return.
+Eventually, the current node will be a leaf, at which point a real character c will be returned, and you can reset the Huffman tree to nullptr to remember that next bit starts a new sequence. Additionally, increment the frequency table for c.
+Note that decode works for a single bit at a time, so may have to be called multiple times until a complete symbol is identified. Refer to the initial test_huffman.cc below for an example.
+
+In both cases, you'll need to build a Huffman tree from scratch for each character. It's not particularly efficient (the Wikipedia article shows how you can just evolve the previous tree), but it's simple enough for our purposes. The algorithm to build a Huffman tree from scratch is as follows:
+
+Create one new HTree node for every possible character + EOF (257 total). Each node will have its symbol (character) as the key, and its count from the frequency table as a value.
+Add all 257 HTrees to a new HForest.
+Iterate until the forest has a single tree in it:
+Find the top-two HTrees in the forest (those who have the lowest frequency count).
+Merge them as the left and right nodes of a new HTree node. The key in the new tree is a new, fake "symbol" (you can use negative keys for these, or values > 257, but the former is simpler). The value of the new tree is the sum of the values of its two subtree.
+At this point, your forest includes a single HTree, which is your Huffman tree.
+When you're done implementing the class, test it with the initial test_huffman.cc. Then, beef up the tests as necessary to ensure no more bugs or edge cases remain.
+
+Part 2: Bit I/O (30%)
+Next, you'll write a class that let's you write or read individual bits from an actual file. The interface for this class is encapsulated in bitio.hh. Again, you can add private members and implementation, but you shouldn't need to modify the interface.
+
+The constructor for this class takes exactly one non-null pointer to a stream: either for output or for input. A BitIO object is meant to be used either for reading from a file or writing to one, not both at once. Therefore, one of the two stream pointers passed to the constructor must be nullptr. It should save this pointer for subsequent I/O. The destructor cleans up any pending file operations.
+
+Then, if it's an input object, you may call input_bit that returns a single boolean: the next bit from the stream (true means a bit value 1, false means 0). Similarly, an output object takes a single boolean bit and outputs it to its stream.
+
+When you're done implementing the class, test it with the initial test_bitio.cc. Then, beef up the tests as necessary to ensure no more bugs or edge cases remain.
+
+Part 3: Encoder / Decoder (20%)
+It's now time to connect all the pieces together. For this part, you'll write two program (two main files). One in encoder.cc, and one in decoder.cc.
+
+The former is a program that takes another filename as a command-line argument. It then reads and compresses the file into an output file of the same name with a .comp suffix.
+
+So, for example, after implementing and compiling the encoder, you'd be able to do something like:
+
+./encoder bitio.cc
+
+And when the program completes there'll be a new binary file in your directory called bitio.cc.comp. When I run this on my computer I get:
+
+fries-12:58:53>~/Dropbox/reed/c221f18/huffman$ ls -l bitio.cc*
+-rw-rw-r-- 1 eitan eitan 1397 Oct 15 14:17 bitio.cc
+-rw-rw-r-- 1 eitan eitan 1111 Nov 1 12:58 bitio.cc.comp
+
+The decoder program takes in a filename as well, reads its, and decompressed it into a file with the same name and a .plaintext suffix. So, for example, running './decoder bitio.cc.comp' should produce a bitio.cc.comp.plaintext in the current directory. It should be identical to bitio.cc.
+
+In both instances, try to challenge yourself to take more than a single command-line argument, so that your encoder actually compresses all the filenames given as input, and the decoder decompresses all of its inputs as well.
+
+Part 4: Compression tests (10%)
+Finally, let's verify our encoder and decoder actually work (and yield some reduction in file size).
+
+Find five text files from anywhere (source code files, poetry, ASCII art, whatever you like, just not binary files like executables). Run your encoder on all these files. Then, run your decoder on all the compressed file.
+
+Verify that the decompressed files are identical to the input files. You can use programs like 'diff' or 'cmp' to verify it.
+
+Then, create a table (in your README) with five rows (one per file) and 4 columns:
+
+File name.
+Raw file size in bytes (before compression).
+Compressed file size in bytes.
+Decompressed file matches raw file exactly (yes/no).
+Part 5: Efficiency (25% extra credit)
+If everything works and you want to challenge yourself, modify your existing classes (or create new ones) so as to implement a Huffman class that doesn't re-compute the tree from scratch for every symbol (using the Wikipedia article or other sources for inspiration). Make sure to name your classes with a different name (perhaps FastHuffman, FastHForest, etc., so as not to overwrite the original version, that you still need to submit.
+
+Starter files
+You may use any of the files provided below in your assignment. You don't have to use any, however.
+
+huffman.hh: This file declares the interface class for a Huffman encoder. Currently, only the public API is defined. Feel free to add any private data members and methods, but you shouldn't need to add any public members.
+test_huffman.cc: A simple test driver for the Huffman API, at least in my version (as encapsulated by huffman.hh). These are only a few basic tests, and you will probably want to expand them to catch more edge cases. This test file will help you understand how to use the Huffman class.
+bitio.hh: This file declares an interface to a class that does I/O using bits: either writing individual bits or reading them to/from file. Again, only the public methods are declared. You can add the implementation material.
+test_bitio.cc: A simple test file for the BitIO class. Feel free to expand it.
+Makefile: Useful for building or rebuilding the various project programs. For example, 'make test' will build and run all tests for you. You may have to adapt the Makefile to suit your needs.
+hforest.*, htree.hh, test_hforest.cc: My solutions to HW6.
+Submission guidelines
+You need to upload (or point to a github repo with) the following four programs and documentation files:
+
+README, with names of both partners, an overview of your code design, and the results of your compression tests.
+huffman.hh + huffman.cc + test_huffman.cc
+bitio.h + bitio.cc + test_bitio.cc
+encoder.cc
+decoder.cc
