@@ -12,5 +12,5 @@ files:	name				raw size	compressed size		match
 	id_ascii			11,791		5,505			yes
 	ascii_arts			11,077		4,510			yes
 	huffman_homework_description	9,645		5,926			yes
-	
+	bible_new			3,880,246	2,222,159		yes	
 
